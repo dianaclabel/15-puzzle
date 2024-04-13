@@ -1,22 +1,45 @@
 export class Tablero {
   piezas = [];
   matriz = [];
+  elemento;
+  counter = 0;
+  size = 4;
 
-  constructor() {
+  constructor(elementoId, counterId) {
+    this.elemento = document.getElementById(elementoId);
+    if (!this.elemento) {
+      throw new Error("El elemento no existe");
+    }
+    this.elemento.innerHTML = "";
+    this.elementoCounter = document.getElementById(counterId);
+
     for (let fila = 1; fila <= 4; fila++) {
-      this.matriz.push([]);
-
       for (let col = 1; col <= 4; col++) {
-        const pieza = new Pieza(4 * (fila - 1) + col, new Posicion(col, fila));
+        const pieza = new Pieza(4 * (fila - 1) + col, fila, col);
+        pieza.elemento.addEventListener("click", () => {
+          this.moverImprimirYComprobar(pieza.numero);
+        });
         this.piezas.push(pieza);
       }
     }
+    this.piezas[this.piezas.length - 1] = null;
 
+    this.elemento.append(...this.piezas.filter(Boolean).map((p) => p.elemento));
     shuffle(this.piezas);
-    const posRandom = Math.ceil(Math.random() * 16);
-    this.piezas[posRandom] = null;
 
     this.matriz = splitInChunks(this.piezas, 4);
+    this.refrescarVista();
+  }
+
+  refrescarVista() {
+    for (let fila = 1; fila <= 4; fila++) {
+      for (let columna = 1; columna <= 4; columna++) {
+        const pieza = this.matriz[fila - 1][columna - 1];
+        if (pieza) {
+          pieza.setPosicion(fila, columna);
+        }
+      }
+    }
   }
 
   mover(numeroDePieza) {
@@ -30,6 +53,8 @@ export class Tablero {
             console.log("sube");
             this.matriz[fila - 2][columna - 1] = piezaCandidata;
             this.matriz[fila - 1][columna - 1] = null;
+            piezaCandidata.setPosicion(fila - 1, columna);
+            this.incrementCounter();
             return;
           }
           // Check abajo
@@ -37,6 +62,8 @@ export class Tablero {
             console.log("baja");
             this.matriz[fila][columna - 1] = piezaCandidata;
             this.matriz[fila - 1][columna - 1] = null;
+            piezaCandidata.setPosicion(fila + 1, columna);
+            this.incrementCounter();
             return;
           }
           // Check izquierda
@@ -44,6 +71,8 @@ export class Tablero {
             console.log("izquierda");
             this.matriz[fila - 1][columna - 2] = piezaCandidata;
             this.matriz[fila - 1][columna - 1] = null;
+            piezaCandidata.setPosicion(fila, columna - 1);
+            this.incrementCounter();
             return;
           }
           // Check derecha
@@ -51,6 +80,8 @@ export class Tablero {
             console.log("derecha");
             this.matriz[fila - 1][columna] = piezaCandidata;
             this.matriz[fila - 1][columna - 1] = null;
+            piezaCandidata.setPosicion(fila, columna + 1);
+            this.incrementCounter();
             return;
           }
         }
@@ -58,22 +89,28 @@ export class Tablero {
     }
   }
 
+  incrementCounter() {
+    this.counter += 1;
+    this.elementoCounter.innerText = this.counter;
+  }
+
   imprimir() {
     console.table(
       this.matriz.map((fila) => fila.map((pieza) => pieza?.numero ?? "(vacio)"))
     );
+    console.log("Movimiento:", this.counter);
   }
 
   comprobar() {
     for (let fila = 1; fila <= 4; fila++) {
       for (let columna = 1; columna <= 4; columna++) {
         const pieza = this.matriz[fila - 1][columna - 1];
-        const estaEnLaPosicionGanadora =
+        const estaEnLaPosicionOriginal =
           pieza &&
-          pieza.posGanadora.columna === columna &&
-          pieza.posGanadora.fila === fila;
+          pieza.columnaOriginal === columna &&
+          pieza.filaOriginal === fila;
         // Verificamos si no está en su posición ganadora
-        if (!estaEnLaPosicionGanadora) {
+        if (!estaEnLaPosicionOriginal) {
           return false;
         }
       }
@@ -92,21 +129,42 @@ export class Tablero {
 
 class Pieza {
   numero = 0;
-  posGanadora = new Posicion(0, 0);
-
-  constructor(numero, posGanadora) {
-    this.numero = numero;
-    this.posGanadora = posGanadora;
-  }
-}
-
-class Posicion {
-  columna = 0;
+  // Posicion original
+  filaOriginal = 0;
+  columnaOriginal = 0;
+  // Posicion actual
   fila = 0;
+  columna = 0;
+  elemento;
 
-  constructor(columna, fila) {
-    this.columna = columna;
+  constructor(numero, filaOriginal, columnaOriginal) {
+    this.numero = numero;
+    this.filaOriginal = filaOriginal;
+    this.columnaOriginal = columnaOriginal;
+    // DOM
+    this.elemento = document.createElement("div");
+    this.elemento.classList.add("box");
+
+    const img = document.createElement("img");
+    img.src = "./assets/gatito.webp";
+
+    img.style.borderRadius = "10px";
+    img.style.width = "400%";
+    img.style.height = "400%";
+    img.style.top = -(filaOriginal - 1) * 100 + "%";
+    img.style.left = -(columnaOriginal - 1) * 100 + "%";
+
+    const span = document.createElement("span");
+    span.textContent = numero;
+
+    this.elemento.append(img, span);
+  }
+
+  setPosicion(fila, columna) {
     this.fila = fila;
+    this.columna = columna;
+    this.elemento.style.top = (fila - 1) * 25 + "%";
+    this.elemento.style.left = (columna - 1) * 25 + "%";
   }
 }
 

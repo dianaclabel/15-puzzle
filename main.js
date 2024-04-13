@@ -1,6 +1,6 @@
 import { Tablero } from "./js/Tablero.js";
 
-const miTablero = new Tablero();
+const miTablero = new Tablero("tablero", "counter");
 
 console.log(miTablero);
 
@@ -12,7 +12,7 @@ window.miTablero = miTablero;
 // funcion para barajear la matriz
 // crear una matriz
 
-let divBox = document.querySelectorAll("box");
+// let divBox = document.querySelectorAll("box");
 
 const tablero = [
   [1, 2, 3, 4],
